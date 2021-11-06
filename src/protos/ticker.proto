@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.helloworld";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+import "google/protobuf/timestamp.proto";
+
+package ticker;
+
+// The greeting service definition.
+service Ticker {
+  // Sends a greeting
+  rpc EmaTick(Integer) returns (TickData) {}
+}
+
+// The request message containing the user's name.
+message Integer {
+  int32 value = 1;
+}
+
+// The response message containing the greetings
+message TickData {
+  google.protobuf.Timestamp time = 1;
+  float price = 2;
+}

@@ -2,13 +2,21 @@
 
 import React, { useEffect, useRef }  from 'react';
 import { createChart, CrosshairMode } from 'lightweight-charts';
+// import {loadPackageDefinition} from '@grpc/grpc-js';
+import { TickerClient } from '../protos/ticker_grpc_web_pb';
+import {Integer, TickData} from "../protos/ticker_pb";
 
 
 export function Chart() {
     const chartContainerRef = useRef();
     const chart = useRef();
     const symbol = 'BTCBUSD';
-    var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcbusd@kline_5m");
+    var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/"+symbol.toLowerCase()+"@kline_1m");
+
+    const tickerService = new TickerClient('http://localhost:8080', null, null);
+
+    const request = new Integer();
+    request.setValue(5);
 
   useEffect(() => {
     chart.current = createChart(chartContainerRef.current, {
@@ -45,13 +53,28 @@ export function Chart() {
       wickUpColor: '#838ca1',
     });
 
+    const emaSeries = chart.current.addLineSeries({
+      color:'rgba(4, 111, 232, 1)',
+      lineWidth:2
+    });
+    emaSeries.setData([])
+
+    setInterval(function(){ 
+      tickerService.emaTick(request, {}, (err, response) => {
+
+        emaSeries.update({
+          time: response.getTime().getSeconds(),
+          value: response.getPrice()
+        });
+        console.log(response.getPrice());
+
+      });
+    }, 60000);
     
 
     binanceSocket.onmessage = function (event) {	
         var message = JSON.parse(event.data);
-
         var candlestick = message.k;
-
         candleSeries.update({
             time: candlestick.t / 1000,
             open: candlestick.o,
@@ -61,11 +84,11 @@ export function Chart() {
         })
     }
 
-    fetch('https://api1.binance.com/api/v3/time').then((r) => r.json()).then((response) => {
+    fetch('https://api.binance.com/api/v3/time').then((r) => r.json()).then((response) => {
         
-        fetch('https://api1.binance.com/api/v3/klines?'+ new URLSearchParams({
-            symbol: 'BTCBUSD',
-            interval: '5m',
+        fetch('https://api.binance.com/api/v3/klines?'+ new URLSearchParams({
+            symbol: symbol,
+            interval: '1m',
             endTime:   response['serverTime'],
         })).then((r) => r.json()).then((response) => {
             var data = new Array();
