@@ -17,7 +17,7 @@ To build docker image run the below command inisde /src directory.
 ### `docker build -t binance-ta .`
 
 To start the docker container
-### `run -d -p 8080:8080 -p 9901:9901 -v "$(pwd)"/envoy.yaml:/etc/envoy/envoy.yaml binance-ta`
+### `docker run -d -p 8080:8080 -p 9901:9901 -v "$(pwd)"/envoy.yaml:/etc/envoy/envoy.yaml binance-ta`
 
 To test that the enovy proxy has started successfully hit localhost:9901 in the browser. You will see the envoy proxy admin page and then you can click on clusters to check whether your cluster is set up or not.
 
