@@ -1,7 +1,7 @@
 
 
 import React, { useEffect, useRef }  from 'react';
-import { createChart, CrosshairMode } from 'lightweight-charts';
+import { createChart, CrosshairMode, Time } from 'lightweight-charts';
 // import {loadPackageDefinition} from '@grpc/grpc-js';
 import { TickerClient } from '../protos/ticker_grpc_web_pb';
 import {Integer, TickData} from "../protos/ticker_pb";
@@ -17,6 +17,11 @@ export function Chart() {
 
     const request = new Integer();
     request.setValue(5);
+
+    function timeToTz(originalTime, timeZone) {
+      const zonedDate = new Date(new Date(originalTime * 1000).toLocaleString('en-US', { timeZone }));
+      return zonedDate.getTime() / 1000;
+  }
 
   useEffect(() => {
     chart.current = createChart(chartContainerRef.current, {
@@ -40,8 +45,10 @@ export function Chart() {
         borderColor: '#485c7b',
       },
       timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
         borderColor: '#485c7b',
-      },
+      }
     });
 
     const candleSeries = chart.current.addCandlestickSeries({
@@ -50,7 +57,7 @@ export function Chart() {
       borderDownColor: '#ff4976',
       borderUpColor: '#4bffb5',
       wickDownColor: '#838ca1',
-      wickUpColor: '#838ca1',
+      wickUpColor: '#838ca1'
     });
 
     const emaSeries = chart.current.addLineSeries({
@@ -59,24 +66,24 @@ export function Chart() {
     });
     emaSeries.setData([])
 
-    setInterval(function(){ 
+   setInterval(function(){ 
       tickerService.emaTick(request, {}, (err, response) => {
 
         emaSeries.update({
-          time: response.getTime().getSeconds(),
+          time: (timeToTz((response.getTime().getSeconds() * 1000) + response.getTime().getNanos(),'UTC') + (3600000*5))/1000,
           value: response.getPrice()
         });
-        console.log(response.getPrice());
+  
 
       });
-    }, 60000);
+    }, 1000);
     
 
     binanceSocket.onmessage = function (event) {	
         var message = JSON.parse(event.data);
         var candlestick = message.k;
         candleSeries.update({
-            time: candlestick.t / 1000,
+            time: (timeToTz(candlestick.t,'UTC') + (3600000*5))/1000,
             open: candlestick.o,
             high: candlestick.h,
             low: candlestick.l,
@@ -90,17 +97,19 @@ export function Chart() {
             symbol: symbol,
             interval: '1m',
             endTime:   response['serverTime'],
+            limit:1000
         })).then((r) => r.json()).then((response) => {
             var data = new Array();
             response.forEach(function (item, index) {
                 data.push({
-                    "time": item[0] / 1000,
+                    "time": (timeToTz(item[0],'UTC') + (3600000*5))/1000,
                     "open": item[1],
                     "high": item[2],
                     "low": item[3],
                     "close": item[4]
                 })
               });
+              console.log(data)
               candleSeries.setData(data);
         });
     });

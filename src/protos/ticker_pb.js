@@ -1,4 +1,4 @@
-// source: protos/ticker.proto
+// source: src/protos/ticker.proto
 /**
  * @fileoverview
  * @enhanceable
